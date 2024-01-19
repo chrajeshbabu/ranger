@@ -22,10 +22,12 @@ import org.apache.hadoop.hbase.client.BalanceRequest;
 import org.apache.hadoop.hbase.coprocessor.MasterCoprocessorEnvironment;
 import org.apache.hadoop.hbase.coprocessor.MasterObserver;
 import org.apache.hadoop.hbase.coprocessor.ObserverContext;
+import org.apache.hadoop.hbase.master.RegionPlan;
 import org.apache.hadoop.hbase.security.AccessDeniedException;
 import org.apache.hadoop.hbase.security.access.Permission;
 
 import java.io.IOException;
+import java.util.List;
 
 public abstract class CompatMasterObserver implements MasterObserver {
 
@@ -35,6 +37,15 @@ public abstract class CompatMasterObserver implements MasterObserver {
         preBalanceHookAction(ctx, "balance", Permission.Action.ADMIN, request);
     }
 
-    abstract public void preBalanceHookAction(ObserverContext<MasterCoprocessorEnvironment> ctx, String request,
-                                              Permission.Action action, Object balanceRequest) throws AccessDeniedException;
+    @Override
+    public void postBalance(ObserverContext<MasterCoprocessorEnvironment> ctx,
+                            BalanceRequest request, List<RegionPlan> plans) throws IOException {
+        postBalanceHookAction(ctx, "balance", Permission.Action.ADMIN, request, plans);
+    }
+
+    public void preBalanceHookAction(ObserverContext<MasterCoprocessorEnvironment> ctx, String request,
+                                     Permission.Action action, Object balanceRequest) throws AccessDeniedException {}
+
+    public void postBalanceHookAction(ObserverContext<MasterCoprocessorEnvironment> ctx, String request,
+                                      Permission.Action action, Object balanceRequest, List<RegionPlan> plans) throws AccessDeniedException {}
 }

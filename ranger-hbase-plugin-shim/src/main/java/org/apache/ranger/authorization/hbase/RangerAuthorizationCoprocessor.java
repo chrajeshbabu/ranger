@@ -2403,14 +2403,27 @@ public class RangerAuthorizationCoprocessor extends CompatMasterObserver impleme
 	}
 
 	@Override
-	public void postBalance(ObserverContext<MasterCoprocessorEnvironment> ctx, List<RegionPlan> plans) throws IOException {
+	public void postBalanceHookAction(ObserverContext<MasterCoprocessorEnvironment> ctx, String request,
+									  Permission.Action action, Object balanceRequest, List<RegionPlan> plans) throws AccessDeniedException {
 		if(LOG.isDebugEnabled()) {
 			LOG.debug("==> RangerAuthorizationCoprocessor.postBalance()");
 		}
 
 		try {
 			activatePluginClassLoader();
-			implMasterObserver.postBalance(ctx, plans);
+			Method postBalance = null;
+			if (balanceRequest == null) {
+				postBalance = implMasterObserver.getClass().getMethod("postBalance", ctx.getClass(), plans.getClass());
+			} else {
+				postBalance = implMasterObserver.getClass().getMethod("postBalance", ctx.getClass(), balanceRequest.getClass(), plans.getClass());
+			}
+			if(balanceRequest == null) {
+				postBalance.invoke(ctx);
+			} else {
+				postBalance.invoke(ctx, balanceRequest);
+			}
+		} catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+			throw new RuntimeException(e);
 		} finally {
 			deactivatePluginClassLoader();
 		}
